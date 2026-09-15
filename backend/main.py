@@ -1,10 +1,22 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend import config
 from backend.api import ambulances, emergencies, hospitals, routes
+from backend.database.seed import seed_database
 
-app = FastAPI()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    seed_database()
+    yield
+
+
+app = FastAPI(lifespan=lifespan)
+
+
 
 settings = config.get_settings()
 app.add_middleware(
