@@ -1,0 +1,7 @@
+.env
+__pycache__/
+.pytest_cache/
+frontend/node_modules/
+backend/rapidroute.db
+frontend/node_modules/
+frontend/.env.local
