@@ -356,6 +356,31 @@ To demonstrate the full system workflow in the application:
 
 ---
 
+## Syllabus Assistant (RAG)
+
+This repository includes a standalone Streamlit RAG app at `/home/runner/work/rapidroute-ai/rapidroute-ai/app.py` that answers questions strictly from an uploaded syllabus PDF.
+
+### Setup
+
+1. Create a Python virtual environment and activate it.
+2. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+3. Create a `.env` file in `/home/runner/work/rapidroute-ai/rapidroute-ai`:
+   ```env
+   OPENAI_API_KEY=your_openai_api_key_here
+   ```
+4. Run the app:
+   ```bash
+   streamlit run app.py
+   ```
+
+The app uses `text-embedding-3-small` for embeddings, `gpt-4o-mini` for responses, ChromaDB for vector search, and strict grounding fallback:
+`I couldn't find this information in the provided syllabus.`
+
+---
+
 ## License
 
 This repository currently has no explicit open-source license. All rights reserved.
