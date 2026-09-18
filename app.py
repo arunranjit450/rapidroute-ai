@@ -44,8 +44,6 @@ def extract_pdf_pages(file_bytes: bytes) -> list[tuple[int, str]]:
 
 @st.cache_resource(show_spinner=True)
 def build_retriever(file_hash: str, page_numbers: tuple[int, ...], page_texts: tuple[str, ...]):
-    del file_hash  # part of cache key
-
     documents = [
         {
             "page_content": text,
@@ -63,7 +61,7 @@ def build_retriever(file_hash: str, page_numbers: tuple[int, ...], page_texts: t
     vectorstore = Chroma.from_documents(
         documents=chunks,
         embedding=get_embeddings(),
-        collection_name=f"syllabus-{hashlib.md5(str(page_numbers).encode()).hexdigest()}",
+        collection_name=f"syllabus-{file_hash[:12]}",
     )
 
     return vectorstore.as_retriever(search_kwargs={"k": 4})
@@ -159,24 +157,28 @@ def main() -> None:
     retrieved_docs = retriever.invoke(user_query)
     context = format_context(retrieved_docs)
 
-    history = [
-        HumanMessage(content=msg["content"])
-        for msg in st.session_state["messages"][-8:]
-        if msg["role"] == "user"
-    ]
+    history = []
+    for msg in st.session_state["messages"][:-1][-8:]:
+        if msg["role"] == "user":
+            history.append(HumanMessage(content=msg["content"]))
+        elif msg["role"] == "assistant":
+            history.append(SystemMessage(content=f"Previous assistant answer: {msg['content']}"))
 
-    response = get_llm().invoke(
-        [
-            SystemMessage(content=SYSTEM_PROMPT),
-            SystemMessage(content=f"Retrieved context:\n\n{context}"),
-            *history,
-            HumanMessage(content=user_query),
-        ]
-    )
-
-    answer = response.content.strip() if isinstance(response.content, str) else FALLBACK_RESPONSE
-    if not answer:
+    if not retrieved_docs:
         answer = FALLBACK_RESPONSE
+    else:
+        response = get_llm().invoke(
+            [
+                SystemMessage(content=SYSTEM_PROMPT),
+                SystemMessage(content=f"Retrieved context:\n\n{context}"),
+                *history,
+                HumanMessage(content=user_query),
+            ]
+        )
+
+        answer = response.content.strip() if isinstance(response.content, str) else FALLBACK_RESPONSE
+        if not answer:
+            answer = FALLBACK_RESPONSE
 
     source_payload = [
         {
